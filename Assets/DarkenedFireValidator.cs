@@ -1,34 +1,52 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.Events;
 
 public class DarkenedFireValidator : MonoBehaviour
 {
     [SerializeField] private List<GameObject> dots = new List<GameObject>();
     [SerializeField] private GameObject failScreen;
     [SerializeField] private GameObject winScreen;
-    [SerializeField] private float selectionTimer = 3f;
+    [SerializeField] private Image timer;
+    [SerializeField] private float selectionTime = 3f;
+
+    public UnityEvent onFail;
 
     private int currIndex;
+    private float currTime;
     private void Start()
     {
-        StartCoroutine(RandomLoopCR());
+        Retry();
     }
 
-    private IEnumerator RandomLoopCR()
+    bool hasFailed;
+    private void Update()
     {
-        currIndex = Random.Range(0, dots.Count);
+        if (hasFailed) return;
 
-        dots.ForEach(x => x.SetActive(dots.IndexOf(x) == currIndex));
+        currTime -= Time.deltaTime;
 
-        yield return new WaitForSeconds(selectionTimer);
+        if (currTime < 0)
+        {
+            hasFailed = true;
+            onFail?.Invoke();
+            failScreen.SetActive(true);
+        }
 
-        failScreen.SetActive(true);
+        timer.fillAmount = currTime / selectionTime;
     }
 
     public void Retry()
     {
-        StartCoroutine(RandomLoopCR());
+        currTime = selectionTime;
+
+        hasFailed = false;
+
+        currIndex = Random.Range(0, dots.Count);
+
+        dots.ForEach(x => x.SetActive(dots.IndexOf(x) == currIndex));
     }
 
     public void OnReceiveInput(int selectedWaymark)
@@ -40,7 +58,16 @@ public class DarkenedFireValidator : MonoBehaviour
 
         failScreen.SetActive(selectedWaymark != correctAnswer);
         winScreen.SetActive(selectedWaymark == correctAnswer);
-        StopAllCoroutines();
+
+        if(selectedWaymark == correctAnswer)
+        {
+
+        }
+        else
+        {
+            hasFailed = true;
+            onFail?.Invoke();
+        }
     }
 
 }
